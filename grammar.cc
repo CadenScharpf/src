@@ -28,14 +28,14 @@ void pushSymbol(std::string symbol, std::vector<std::string> & symbols)
 
 int idxOf(std::string sym, std::vector<std::string> & symbols)
 {
-    int i = 0;
+    unsigned int i = 0;
     while((symbols[i] != sym) && (i<symbols.size()) ){i++;};
     return (symbols[i] == sym) ? i : -1;
 }
 
 void print_symbols(std::vector<std::string> * symbls)
 {
-    for(int i = 0; i < symbls->size(); i++)
+    for(unsigned int i = 0; i < symbls->size(); i++)
     {
         std::cout << "[" << symbls->at(i) << " : " << i << "]    ";
     }
@@ -51,7 +51,7 @@ void print_rule(rule_t * rule)
 
 void print_rhs(std::vector<int> * rhs)
 {
-    for(int i = 0; i < rhs->size(); i++)
+    for(unsigned int i = 0; i < rhs->size(); i++)
     {
         std::cout << rhs->at(i) << " ";
     }
@@ -59,7 +59,7 @@ void print_rhs(std::vector<int> * rhs)
 
 void print_rules(std::vector<rule_t*> * rules)
 {
-    for(int i = 0; i < rules->size(); i++)
+    for(unsigned int i = 0; i < rules->size(); i++)
     {
         print_rule(rules->at(i));
     }
@@ -82,7 +82,7 @@ void printTermsAndNonTerms(grammar_t * grammar)
 {
     std::vector<std::string> * symbls = grammar->symbols;
     std::set<int> tnt;
-    for(int i = 2; i < symbls->size(); i++){tnt.insert(i);}
+    for(unsigned int i = 2; i < symbls->size(); i++){tnt.insert(i);}
     std::set<int> nt = getNonTerminals(grammar);
     std::set<int> t = diff(tnt, nt);
     printSetWithStr(t,grammar);
@@ -94,7 +94,7 @@ std::set<int> getNonTerminals(grammar_t * g)
 {
     std::set<int> nt;
     std::vector<rule_t*> rules = *(g->rules);
-    for(int i = 0; i < rules.size(); i++)
+    for(unsigned int i = 0; i < rules.size(); i++)
     {
         nt.insert((rules.at(i))->lhs);
     }
@@ -104,10 +104,18 @@ std::set<int> getTermsAndNonTerms(grammar_t * g)
 {
     std::set<int> tnt;
     std::vector<std::string> symbls = *(g->symbols);
-    for(int i = 2; i < symbls.size(); i++)
+    for(unsigned int i = 2; i < symbls.size(); i++)
     {
         tnt.insert(i);
     }
+    return tnt;
+}
+std::set<int> getTerminals(grammar_t * g)
+{
+    std::set<int> nt = getNonTerminals(g);
+    std::set<int> tnt = getTermsAndNonTerms(g);
+    std::set<int> d = diff(tnt,nt);
+    return d;
 }
 void printSetWithStr(std::set<int> s, grammar_t * g)
 {
@@ -117,4 +125,129 @@ void printSetWithStr(std::set<int> s, grammar_t * g)
         std::cout << g->symbols->at(*it) << ' ';
     }
     std::cout << RESET;
+}
+void printSetWithStrAndComma(std::set<int> s, grammar_t * g)
+{
+    std::cout << YELLOW;
+    std::set<int>::iterator it = s.begin();
+    std::set<int>::iterator last = it;
+    std::advance(last, s.size()-1);
+    for (; it != last; ++it)
+    {
+        std::cout << g->symbols->at(*it) << ", ";
+    }
+    std::cout << g->symbols->at(*it) << " ";
+    std::cout << RESET;
+}
+
+setlist_t calcFirstSets(grammar_t * g)
+{   
+    setlist_t first;//!< first set obj
+    rulelist_t & rls = *(g->rules);//ref to g->rules
+    symbollist_t & symbls = *(g->symbols);
+    set_t terminals = getTerminals(g);
+
+    set_t temp;
+    for(unsigned int i = 0; i < g->symbols->size(); i++)
+    {first.push_back(temp);} //!< populate return vector
+
+    //INITIALIZATION
+    first.at(idxOf("#",symbls)).insert(idxOf("#",symbls));//!< rule 1: add # to first(#)
+
+     for (auto it = terminals.begin(); it != terminals.end(); ++it)//!< for each terminal
+     {
+        first.at(*it).insert(*it);
+     }
+
+     //LOOP STEPS III - V
+     bool changed = true;
+    
+     while(changed)//!< repeat steps III - V
+     {
+         changed = false;
+         for(unsigned int i = 0;i < rls.size(); i++)//!< for every grammar rule
+         {
+            rule_t & r = *(rls.at(i));
+             set_t before = first.at(r.lhs);
+             //!< rule 3
+             if(r.rhs->size() > 0)
+             {
+                set_t e = first.at(r.rhs->at(0));
+                set_t epsilon;
+                epsilon.insert(idxOf("#",symbls));
+
+                e = diff(e, epsilon);
+
+                first.at(r.lhs).insert(e.begin(), e.end());
+             }
+
+             
+             auto it = r.rhs->begin();
+
+             while
+             (
+                (it != r.rhs->end())
+                &&
+                (std::find(first.at(*it).begin(), first.at(*it).end(), idxOf("#", *(g->symbols))) 
+                    != first.at(*it).end())
+             )
+             {it++;};
+             if(it != r.rhs->end())//!< rule 4
+             {
+                 set_t e = first.at(*it);
+                 set_t epsilon;
+                 epsilon.insert(idxOf("#",symbls));
+                 e = diff(e, epsilon);
+
+                 first.at(r.lhs).insert(e.begin(), e.end());
+             } else {
+                 first.at(r.lhs).insert(idxOf("#",symbls));//!< rule 5
+             }
+             if((first.at(r.lhs)) != before){changed = true;};//!< check for change
+         }
+     }
+
+    return first;
+}
+void printFirstSets(std::vector<std::set<int>> s, grammar_t * g)
+{
+    std::set<int> nt = getNonTerminals(g);
+     for (auto it = nt.begin(); it != nt.end(); ++it)
+    {   
+        std::cout << "FIRST(" << (g->symbols)->at(*it) << ") = { ";
+        printSetWithStrAndComma(s.at(*it), g);
+        std::cout << "}" << std::endl;
+    }
+}
+void printFullFirstSets(std::vector<std::set<int>> s, grammar_t * g)
+{
+     for(unsigned int i = 0; i < s.size(); i++)
+    {   
+        std::cout << "FIRST(" << (g->symbols)->at(i) << ") = { ";
+        printSetWithStr(s.at(i), g);
+        std::cout << "}" << std::endl;
+    }
+}
+std::vector<std::set<int>> calcFollowSets(grammar_t * g)
+{
+    //bool changed = true;
+    setlist_t t;
+    return t;
+
+}
+void deleteGrammar(grammar_t * g)
+{
+    std::vector<rule_t*> rules = *(g->rules);
+    for(unsigned int i = 0; i < rules.size(); i++)
+    {
+        deleteRule(rules.at(i));
+        free((g->rules)->at(i));
+    }
+    delete g->rules;
+    delete g->symbols;
+    free(g);
+}
+void deleteRule(rule_t * r)
+{
+    delete r->rhs;
 }

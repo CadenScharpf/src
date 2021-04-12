@@ -1,6 +1,6 @@
 IDIR =./
 CC=g++-7
-CFLAGS=-g -I/
+CFLAGS=-g -Wall -I/
 
 ODIR=obj
 

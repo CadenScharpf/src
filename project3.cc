@@ -12,8 +12,15 @@
 #include "parser.h"
 
 using namespace std;
-LexicalAnalyzer lexer;
+LexicalAnalyzer lexer;std::set<int> getNonTerminals(grammar_t * g);
+std::set<int> getTermsAndNonTerms(grammar_t * g);
+std::set<int> getNonTerminals(grammar_t * g);
+void printSetWithStr(std::set<int>, grammar_t * g);
+void deleteGrammar(grammar_t * g);
+
 grammar_t * grammar;
+std::vector<std::set<int>> first;
+std::vector<std::set<int>> follow;
 // read grammar
 void ReadGrammar()
 {
@@ -38,12 +45,15 @@ void RemoveUselessSymbols()
 void CalculateFirstSets()
 {
     cout << "Calculating the first sets\n";
+    first = calcFirstSets(grammar);
+    printFirstSets(first, grammar);
 }
 
 // Task 4
 void CalculateFollowSets()
 {
     cout << "Calculating the follow sets\n";
+    //calcFollowSets(grammar);
 }
 
 // Task 5
@@ -71,8 +81,9 @@ int main (int argc, char* argv[])
     ReadGrammar();  // Reads the input grammar from standard input
                     // and represent it internally in data structures
                     // ad described in project 2 presentation file
-
-    switch (task) {
+    print_grammar(grammar);
+    switch (task)
+    {
         case 1: printTerminalsAndNoneTerminals();
             break;
 
@@ -93,6 +104,7 @@ int main (int argc, char* argv[])
             break;
 
     }
+    deleteGrammar(grammar);
     return 0;
 }
 

@@ -1,3 +1,3 @@
 #!/bin/bash
 make
-./a.out 1 < tests/test01.txt
+valgrind ./a.out 3 < tests/test01.txt
