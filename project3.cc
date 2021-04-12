@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include "lexer.h"
 #include "grammar.h"
+#include "sets.h"
 #include "parser.h"
 
 using namespace std;
@@ -18,13 +19,13 @@ void ReadGrammar()
 {
     cout << "Reading Grammar\n";
     grammar = parseGrammar(lexer);
-    print_grammar(grammar);
 }
 
 // Task 1
 void printTerminalsAndNoneTerminals()
 {
     cout << "Printing terminals and non terminals\n";
+    printTermsAndNonTerms(grammar);
 }
 
 // Task 2
@@ -54,7 +55,6 @@ void CheckIfGrammarHasPredictiveParser()
 int main (int argc, char* argv[])
 {
     int task;
-
     if (argc < 2)
     {
         cout << "Error: missing argument\n";

@@ -4,10 +4,10 @@ CFLAGS=-g -I/
 
 ODIR=obj
 
-_DEPS = inputbuf.h lexer.h grammar.h parser.h
+_DEPS = inputbuf.h lexer.h grammar.h parser.h sets.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = project3.o inputbuf.o lexer.o grammar.o
+_OBJ = project3.o inputbuf.o lexer.o grammar.o sets.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 

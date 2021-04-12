@@ -1,3 +1,3 @@
 #!/bin/bash
-
-valgrind ./a.out 1 < tests/test01.txt
+make
+./a.out 1 < tests/test01.txt
