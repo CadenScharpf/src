@@ -19,6 +19,7 @@ void printSetWithStr(std::set<int>, grammar_t * g);
 void deleteGrammar(grammar_t * g);
 
 grammar_t * grammar;
+bool calculatedFirst = 0;
 std::vector<std::set<int>> first;
 std::vector<std::set<int>> follow;
 // read grammar
@@ -53,7 +54,8 @@ void CalculateFirstSets()
 void CalculateFollowSets()
 {
     cout << "Calculating the follow sets\n";
-    //calcFollowSets(grammar);
+    follow = calcFollowSets(grammar, calcFirstSets(grammar));
+    printFullFollowSets(follow, grammar);
 }
 
 // Task 5

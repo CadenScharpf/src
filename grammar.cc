@@ -161,7 +161,6 @@ setlist_t calcFirstSets(grammar_t * g)
 
      //LOOP STEPS III - V
      bool changed = true;
-    
      while(changed)//!< repeat steps III - V
      {
          changed = false;
@@ -169,21 +168,13 @@ setlist_t calcFirstSets(grammar_t * g)
          {
             rule_t & r = *(rls.at(i));
              set_t before = first.at(r.lhs);
-             //!< rule 3
-             if(r.rhs->size() > 0)
+             if(r.rhs->size() > 0)//!< rule 3
              {
                 set_t e = first.at(r.rhs->at(0));
-                set_t epsilon;
-                epsilon.insert(idxOf("#",symbls));
-
-                e = diff(e, epsilon);
-
+                e = removeEpsilon(e,g);
                 first.at(r.lhs).insert(e.begin(), e.end());
              }
-
-             
              auto it = r.rhs->begin();
-
              while
              (
                 (it != r.rhs->end())
@@ -206,7 +197,6 @@ setlist_t calcFirstSets(grammar_t * g)
              if((first.at(r.lhs)) != before){changed = true;};//!< check for change
          }
      }
-
     return first;
 }
 void printFirstSets(std::vector<std::set<int>> s, grammar_t * g)
@@ -215,6 +205,16 @@ void printFirstSets(std::vector<std::set<int>> s, grammar_t * g)
      for (auto it = nt.begin(); it != nt.end(); ++it)
     {   
         std::cout << "FIRST(" << (g->symbols)->at(*it) << ") = { ";
+        printSetWithStrAndComma(s.at(*it), g);
+        std::cout << "}" << std::endl;
+    }
+}
+void printFollowSets(std::vector<std::set<int>> s, grammar_t * g)
+{
+    std::set<int> nt = getNonTerminals(g);
+     for (auto it = nt.begin(); it != nt.end(); ++it)
+    {   
+        std::cout << "FOLLOW(" << (g->symbols)->at(*it) << ") = { ";
         printSetWithStrAndComma(s.at(*it), g);
         std::cout << "}" << std::endl;
     }
@@ -228,13 +228,54 @@ void printFullFirstSets(std::vector<std::set<int>> s, grammar_t * g)
         std::cout << "}" << std::endl;
     }
 }
-std::vector<std::set<int>> calcFollowSets(grammar_t * g)
+void printFullFollowSets(std::vector<std::set<int>> s, grammar_t * g)//!< for submission
+{
+    for(unsigned int i = 0; i < s.size(); i++)
+    {   
+        std::cout << "FOLLOW(" << (g->symbols)->at(i) << ") = { ";
+        printSetWithStr(s.at(i), g);
+        std::cout << "}" << std::endl;
+    }
+}
+std::vector<std::set<int>> calcFollowSets(grammar_t * g, setlist_t first)
 {
     //bool changed = true;
-    setlist_t t;
-    return t;
+    setlist_t follow;//!< first set obj
+    rulelist_t & rls = *(g->rules);//ref to g->rules
+    //symbollist_t & symbls = *(g->symbols);
+    set_t terminals = getTerminals(g);
+    set_t nt = getNonTerminals(g);
 
+    set_t temp;
+    for(unsigned int i = 0; i < g->symbols->size(); i++)
+    {follow.push_back(temp);} //!< populate return vector
+
+    //INITIALIZATION
+    std::set<int>::iterator x = nt.begin();
+    follow.at(*x).insert(idxOf("$", *(g->symbols)));//!< rule 1
+
+    //LOOP
+    for(unsigned int i = 0; i < rls.size(); i++)//!< for each rule
+    {
+        rule_t & rule = *(rls.at(i));//!< refence to current rule
+        std::vector<int>::iterator it = (rule.rhs)->begin();
+        while(it != (rule.rhs)->end())
+        {
+            
+        }
+
+    }
+    return follow;
 }
+
+set_t removeEpsilon(set_t s, grammar_t * g)
+{
+    set_t epsilon;
+    epsilon.insert(idxOf("#",*(g->symbols)));
+    return diff(s, epsilon);
+}
+
+
 void deleteGrammar(grammar_t * g)
 {
     std::vector<rule_t*> rules = *(g->rules);
