@@ -1,8 +1,8 @@
 IDIR =./
 CC=g++-7
-CFLAGS=-g -Wall -I/
+CFLAGS= -I/
 
-ODIR=obj
+ODIR=./
 
 _DEPS = inputbuf.h lexer.h grammar.h parser.h sets.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))

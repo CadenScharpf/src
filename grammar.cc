@@ -42,35 +42,150 @@ void print_symbols(std::vector<std::string> * symbls)
     std::cout << std::endl;
 }
 
-void print_rule(rule_t * rule)
+std::vector<bool> calculateReachableSymbols(grammar_t * g)
 {
-    std::cout << rule->lhs << ": ";
-    print_rhs(rule->rhs);
+    std::vector<bool> reachable(g->symbols->size(), false);
+    std::vector<std::string> symbls = *(g->symbols);
+    set_t terms = getTerminals(g);
+    std::vector<rule_t*> &rls = *(g->rules);
+
+    reachable.at(2) = true;
+    bool changed = true;
+    while(changed)
+    {
+        changed = false;
+
+        for(int i = 0; i < rls.size(); i++)
+        {
+            rule_t * rule = rls.at(i);
+            int l = rule->lhs;
+            std::vector<int> r = *(rule->rhs);
+            if(reachable.at(l) == true)
+            {
+                for(auto x : r)
+                {
+                    if(reachable.at(x) == false){changed = true;}
+                    reachable.at(x) = true;
+                }
+            }
+        }
+    }
+    return reachable;
+}
+
+std::vector<bool> calculateGeneratingSymbols(grammar_t * g)
+{
+    std::vector<std::string> symbls = *(g->symbols);
+    set_t terms = getTerminals(g);
+    std::vector<rule_t*> &rls = *(g->rules);
+    std::vector<bool> gsymb(symbls.size(), false);
+
+    //initialization
+    std::set<int> t = getTerminals(g);
+    gsymb.at(idxOf("#",*(g->symbols))) = 1;
+    for(auto &i : t)
+    {
+        gsymb.at(i) = true; //!< terminals are generating
+    }
+    //LOOP
+    bool changed = true;
+    while(changed)
+    {
+        changed = false;
+        for(auto &rl : rls)
+        {
+            int lhs = rl->lhs;
+            std::vector<int> &rhs = *(rl->rhs);
+
+            auto rhsterm = rhs.begin();
+            while(rhsterm != rhs.end() && gsymb.at(*rhsterm) == 1)
+            {rhsterm++;}
+
+            if(rhsterm == rhs.end())
+            { 
+               if(gsymb.at(lhs) == false){changed = true;}
+               gsymb.at(lhs) = 1; 
+            }
+        }
+    }
+    return gsymb;
+}
+
+void removeRlsWNonGenSyms(grammar_t * g, std::vector<bool> gensym)
+{   
+    rulelist_t * keep = new rulelist_t;
+    for(int i = 0; i < g->rules->size(); i++ )
+    {
+        rule_t * rulee = g->rules->at(i);//<! pointer to current rule
+        int lhs = rulee->lhs; //copy of lhs
+        std::vector<int> rhs = *(rulee->rhs); //copy or rhs
+
+        std::vector<int>::iterator term = rhs.begin(); // iterate over current rules rhs
+
+        while((term != rhs.end()) && (gensym.at(*term)==1) )// inc term while it points to a generating sym
+        {
+            term++;
+        }
+        if(term == rhs.end())//delete rule if it has a non generating symbol
+        {
+            keep->push_back(new_rule(lhs,rhs));
+        }
+    }
+    deleteRuleList(g);
+    g->rules = keep;
+
+}
+
+void removeRlsWNonReachableSyms(grammar_t * g, std::vector<bool> rsyms)
+{
+    rulelist_t * keep = new rulelist_t;
+    for(int i = 0; i < g->rules->size(); i++)
+    {
+        rule_t* rule =  g->rules->at(i);
+        bool toKeep = 1;
+        if(!rsyms.at(rule->lhs))// THIS LINE IS A MAYBE AND COULD BE A CAUSE FOR FAILED TEST CASES
+        {toKeep = 0;}
+        for(int i : *(rule->rhs))
+        {
+            if(!rsyms.at(i))
+            {toKeep = 0;}
+        }
+        if(toKeep)
+        {keep->push_back(new_rule(rule->lhs, *(rule->rhs)));}
+    }
+    deleteRuleList(g);
+    g->rules = keep;
+}
+
+void print_rule(rule_t * rule, grammar_t * g)
+{
+    std::cout << g->symbols->at(rule->lhs) << " -> ";
+    print_rhs(rule->rhs, g);
     std::cout << std::endl;
 }
 
-void print_rhs(std::vector<int> * rhs)
+void print_rhs(std::vector<int> * rhs, grammar_t * g)
 {
     for(unsigned int i = 0; i < rhs->size(); i++)
     {
-        std::cout << rhs->at(i) << " ";
+        std::cout << g->symbols->at(rhs->at(i)) << " ";
     }
 }
 
-void print_rules(std::vector<rule_t*> * rules)
+void print_rules(rulelist_t * rules, grammar_t * g)
 {
     for(unsigned int i = 0; i < rules->size(); i++)
     {
-        print_rule(rules->at(i));
+        print_rule(rules->at(i), g);
     }
 }
 
 void print_grammar(grammar_t * grammar)
 {
-    std::cout << YELLOW << "Symbols: " << RESET << std::endl;
+    std::cout << "Symbols: " << std::endl;
     print_symbols(grammar->symbols);
-    std::cout << YELLOW << "Rules: " << RESET << std::endl;
-    print_rules(grammar->rules);
+    std::cout << "Rules: " << std::endl;
+    print_rules(grammar->rules, grammar);
 }
 
 /**
@@ -119,16 +234,15 @@ std::set<int> getTerminals(grammar_t * g)
 }
 void printSetWithStr(std::set<int> s, grammar_t * g)
 {
-    std::cout << YELLOW;
     for (auto it = s.begin(); it != s.end(); ++it)
     {
         std::cout << g->symbols->at(*it) << ' ';
     }
-    std::cout << RESET;
+    //std::cout << RESET;
 }
 void printSetWithStrAndComma(std::set<int> s, grammar_t * g)
 {
-    std::cout << YELLOW;
+    //std::cout << YELLOW;
     std::set<int>::iterator it = s.begin();
     std::set<int>::iterator last = it;
     std::advance(last, s.size()-1);
@@ -137,7 +251,7 @@ void printSetWithStrAndComma(std::set<int> s, grammar_t * g)
         std::cout << g->symbols->at(*it) << ", ";
     }
     std::cout << g->symbols->at(*it) << " ";
-    std::cout << RESET;
+    //std::cout << RESET;
 }
 
 setlist_t calcFirstSets(grammar_t * g)
@@ -150,7 +264,7 @@ setlist_t calcFirstSets(grammar_t * g)
     set_t temp;
     for(unsigned int i = 0; i < g->symbols->size(); i++)
     {first.push_back(temp);} //!< populate return vector
-
+    
     //INITIALIZATION
     first.at(idxOf("#",symbls)).insert(idxOf("#",symbls));//!< rule 1: add # to first(#)
 
@@ -197,6 +311,7 @@ setlist_t calcFirstSets(grammar_t * g)
              if((first.at(r.lhs)) != before){changed = true;};//!< check for change
          }
      }
+     
     return first;
 }
 void printFirstSets(std::vector<std::set<int>> s, grammar_t * g)
@@ -245,6 +360,7 @@ std::vector<std::set<int>> calcFollowSets(grammar_t * g, setlist_t first)
     //symbollist_t & symbls = *(g->symbols);
     set_t terminals = getTerminals(g);
     set_t nt = getNonTerminals(g);
+    //print_grammar(g);
 
     set_t temp;
     for(unsigned int i = 0; i < g->symbols->size(); i++)
@@ -254,16 +370,87 @@ std::vector<std::set<int>> calcFollowSets(grammar_t * g, setlist_t first)
     std::set<int>::iterator x = nt.begin();
     follow.at(*x).insert(idxOf("$", *(g->symbols)));//!< rule 1
 
-    //LOOP
+    //APPLY RULES IV/V
     for(unsigned int i = 0; i < rls.size(); i++)//!< for each rule
     {
-        rule_t & rule = *(rls.at(i));//!< refence to current rule
+        rule_t & rule = *(rls.at(i));
+        int l = rule.lhs;
         std::vector<int>::iterator it = (rule.rhs)->begin();
-        while(it != (rule.rhs)->end())
+        for(int j = 0; j < rls.size(); j++)//against each rhs
         {
-            
+            std::vector<int> r = *(rls.at(j)->rhs);
+            for(int k = 0; k < r.size()-1; k++)//against each rhs token
+            {
+                if(r.at(k) == l)
+                {
+                    int nxidx = r.at(k+1);
+                    std::set<int> noep = removeEpsilon(first.at(nxidx), g);
+                    follow.at(l).insert(noep.begin(), noep.end()); //rule 1
+                    int kk = k+1;
+                    while((kk < r.size()-1) && contains(first.at(r.at(kk)), idxOf("#", *(g->symbols))))//!< loop for rule 2(sketchy)
+                    {
+                        nxidx = r.at(kk+1);
+                        noep = removeEpsilon(first.at(nxidx), g);
+                        follow.at(l).insert(noep.begin(), noep.end());
+                        kk++;
+                    }
+                }
+            }
         }
+    }
 
+    //LOOP RULES II/III
+    bool changed = true;
+    while(changed)
+    {
+        changed = false;
+        //LOOP FOR RULE II
+        for(int i = 0; i < rls.size();i++)//for each rule
+        {
+            rule_t & rule = *(rls.at(i));
+            int l = rule.lhs;
+
+            for(int j = 0; j < rls.size(); j++)//against every other rhs
+            {
+                std::vector<int> r = *(rls.at(j)->rhs);
+                int rend = (r.at(r.size()-1));
+                int rendl = rls.at(j)->lhs;
+                if(rend == l)
+                {
+                    std::set<int> old = follow.at(l);
+                    follow.at(l).insert(follow.at(rendl).begin(), follow.at(rendl).end());//apply rule II
+                    if(follow.at(l)!= old){changed = true;}
+                }
+            }
+        }
+        //LOOP FOR RULE III
+        for(int i = 0; i < rls.size(); i++)
+        {
+            int l = rls.at(i)->lhs;
+            for(int j = 0; j < rls.size(); j++)
+            {
+                std::vector<int> r = *(rls.at(j)->rhs);
+                int ll = rls.at(j)->lhs;
+                for(int k = 0; k < r.size(); k++)
+                {
+                    if((r.at(k) == l) && (k < r.size()-1)) 
+                    {
+                        int kk = k+1;
+                        while((kk<r.size()) && contains(first.at(r.at(kk)), idxOf("#", *(g->symbols))))
+                        {
+                            kk++;
+                        }
+                        if(kk >= r.size())
+                        {
+                            std::set<int> old = first.at(l);
+                            std::set<int> ins = first.at(ll);
+                            first.at(l).insert(ins.begin(), ins.end());
+                            if(first.at(l) != old){changed = true;}
+                        }
+                    }
+                }
+            }
+        }
     }
     return follow;
 }
@@ -287,6 +474,15 @@ void deleteGrammar(grammar_t * g)
     delete g->rules;
     delete g->symbols;
     free(g);
+}
+void deleteRuleList(grammar_t * g)
+{
+    for(unsigned int i = 0; i < g->rules->size(); i++)
+    {
+        deleteRule(g->rules->at(i));
+        free((g->rules)->at(i));
+    }
+    delete g->rules;
 }
 void deleteRule(rule_t * r)
 {

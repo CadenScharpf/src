@@ -25,27 +25,31 @@ std::vector<std::set<int>> follow;
 // read grammar
 void ReadGrammar()
 {
-    cout << "Reading Grammar\n";
+    //cout << "Reading Grammar\n";
     grammar = parseGrammar(lexer);
 }
 
 // Task 1
 void printTerminalsAndNoneTerminals()
 {
-    cout << "Printing terminals and non terminals\n";
+    //cout << "Printing terminals and non terminals\n";
     printTermsAndNonTerms(grammar);
 }
 
 // Task 2
 void RemoveUselessSymbols()
 {
-    cout << "Removing useless symbols\n";
+    std::vector<bool> gsymb = calculateGeneratingSymbols(grammar);
+    removeRlsWNonGenSyms(grammar, gsymb);
+    std::vector<bool> rsymbs = calculateReachableSymbols(grammar);
+    removeRlsWNonReachableSyms(grammar, rsymbs);
+    print_rules(grammar->rules, grammar);
 }
 
 // Task 3
 void CalculateFirstSets()
 {
-    cout << "Calculating the first sets\n";
+    //cout << "Calculating the first sets\n";
     first = calcFirstSets(grammar);
     printFirstSets(first, grammar);
 }
@@ -53,9 +57,9 @@ void CalculateFirstSets()
 // Task 4
 void CalculateFollowSets()
 {
-    cout << "Calculating the follow sets\n";
+    //cout << "Calculating the follow sets\n";
     follow = calcFollowSets(grammar, calcFirstSets(grammar));
-    printFullFollowSets(follow, grammar);
+    printFollowSets(follow, grammar);
 }
 
 // Task 5
@@ -83,7 +87,7 @@ int main (int argc, char* argv[])
     ReadGrammar();  // Reads the input grammar from standard input
                     // and represent it internally in data structures
                     // ad described in project 2 presentation file
-    print_grammar(grammar);
+    //print_grammar(grammar);
     switch (task)
     {
         case 1: printTerminalsAndNoneTerminals();

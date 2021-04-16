@@ -17,7 +17,7 @@ grammar_t * parseGrammar(LexicalAnalyzer &lexer);
  */
 void syntaxErr()
 {
-    std::cout << RED << "Syntax Error !!!" << RESET << std::endl;
+    std::cout << "SYNTAX ERROR !!!" << std::endl;
     exit(0);
 }
 

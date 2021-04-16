@@ -53,3 +53,10 @@ void printSet(std::set<int> myset)
         }
         std::cout << std::endl;
 }
+
+bool contains(std::set<int> s, int x)
+{
+    std::set<int>::iterator it = std::find(s.begin(), s.end(), x);
+    if(*it == x){return 1;}
+    return 0;
+}
