@@ -1,6 +1,6 @@
 IDIR =./
 CC=g++-7
-CFLAGS= -I/
+CFLAGS= -g -I/
 
 ODIR=./
 

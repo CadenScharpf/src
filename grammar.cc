@@ -245,6 +245,7 @@ void printSetWithStrAndComma(std::set<int> s, grammar_t * g)
     //std::cout << YELLOW;
     std::set<int>::iterator it = s.begin();
     std::set<int>::iterator last = it;
+    if(s.size() == 0){return;}
     std::advance(last, s.size()-1);
     for (; it != last; ++it)
     {
@@ -296,7 +297,14 @@ setlist_t calcFirstSets(grammar_t * g)
                 (std::find(first.at(*it).begin(), first.at(*it).end(), idxOf("#", *(g->symbols))) 
                     != first.at(*it).end())
              )
-             {it++;};
+            {
+                set_t e = first.at(*it);
+                set_t epsilon;
+                epsilon.insert(idxOf("#",symbls));
+                e = diff(e, epsilon);
+                 first.at(r.lhs).insert(e.begin(), e.end());
+                 it++;
+            };
              if(it != r.rhs->end())//!< rule 4
              {
                  set_t e = first.at(*it);
@@ -371,7 +379,8 @@ std::vector<std::set<int>> calcFollowSets(grammar_t * g, setlist_t first)
     follow.at(*x).insert(idxOf("$", *(g->symbols)));//!< rule 1
 
     //APPLY RULES IV/V
-    for(unsigned int i = 0; i < rls.size(); i++)//!< for each rule
+
+ for(unsigned int i = 0; i < rls.size(); i++)//!< for each rule
     {
         rule_t & rule = *(rls.at(i));
         int l = rule.lhs;
@@ -398,59 +407,28 @@ std::vector<std::set<int>> calcFollowSets(grammar_t * g, setlist_t first)
             }
         }
     }
-
     //LOOP RULES II/III
     bool changed = true;
     while(changed)
     {
+        std::vector<std::set<int>> old = follow;
         changed = false;
         //LOOP FOR RULE II
-        for(int i = 0; i < rls.size();i++)//for each rule
-        {
-            rule_t & rule = *(rls.at(i));
-            int l = rule.lhs;
 
-            for(int j = 0; j < rls.size(); j++)//against every other rhs
-            {
-                std::vector<int> r = *(rls.at(j)->rhs);
-                int rend = (r.at(r.size()-1));
-                int rendl = rls.at(j)->lhs;
-                if(rend == l)
-                {
-                    std::set<int> old = follow.at(l);
-                    follow.at(l).insert(follow.at(rendl).begin(), follow.at(rendl).end());//apply rule II
-                    if(follow.at(l)!= old){changed = true;}
-                }
-            }
-        }
-        //LOOP FOR RULE III
-        for(int i = 0; i < rls.size(); i++)
+        for(rule_t * rule : rls)//rule to add to 
         {
-            int l = rls.at(i)->lhs;
-            for(int j = 0; j < rls.size(); j++)
+            std::vector<int>::reverse_iterator t = rule->rhs->rbegin();
+            if(t != rule->rhs->rend())
             {
-                std::vector<int> r = *(rls.at(j)->rhs);
-                int ll = rls.at(j)->lhs;
-                for(int k = 0; k < r.size(); k++)
+                follow.at(*t).insert(follow.at(rule->lhs).begin(), follow.at(rule->lhs).end());//RULE II
+                while(std::next(t,1)!=rule->rhs->rend() && contains(first.at(*t), idxOf("#", *(g->symbols))))
                 {
-                    if((r.at(k) == l) && (k < r.size()-1)) 
-                    {
-                        int kk = k+1;
-                        while((kk<r.size()) && contains(first.at(r.at(kk)), idxOf("#", *(g->symbols))))
-                        {
-                            kk++;
-                        }
-                        if(kk >= r.size())
-                        {
-                            std::set<int> old = first.at(l);
-                            std::set<int> ins = first.at(ll);
-                            first.at(l).insert(ins.begin(), ins.end());
-                            if(first.at(l) != old){changed = true;}
-                        }
-                    }
+                    follow.at(*(std::next(t,1))).insert(follow.at(rule->lhs).begin(), follow.at(rule->lhs).end());
+                    t++;
                 }
             }
         }
+        if(follow != old){changed = true;}
     }
     return follow;
 }
@@ -462,6 +440,33 @@ set_t removeEpsilon(set_t s, grammar_t * g)
     return diff(s, epsilon);
 }
 
+bool hasPredictiveParser(grammar_t * g)
+{
+    std::vector<std::set<int>> FIRST = calcFirstSets(g);
+    std::vector<std::set<int>> FOLLOW = calcFollowSets(g, FIRST);
+    int i = 0;
+    for(rule_t * &r : *(g->rules))
+    {
+        rule_t rule = *r;
+        int lhs = rule.lhs;
+        std::vector<int> rhs = *(rule).rhs;
+        
+        std::vector<rule_t*>::iterator it = g->rules->begin();
+        std::advance(it, i);
+        while(it != g->rules->end())
+        {/*
+            if((*it)->lhs == lhs)
+            {
+                while()
+            }
+*/
+            it++;
+        }
+
+        i++;
+    }
+    return 1;
+}
 
 void deleteGrammar(grammar_t * g)
 {

@@ -58,6 +58,7 @@ void CalculateFirstSets()
 void CalculateFollowSets()
 {
     //cout << "Calculating the follow sets\n";
+    //print_grammar(grammar);
     follow = calcFollowSets(grammar, calcFirstSets(grammar));
     printFollowSets(follow, grammar);
 }
@@ -65,7 +66,8 @@ void CalculateFollowSets()
 // Task 5
 void CheckIfGrammarHasPredictiveParser()
 {
-    cout << "Cheching if grammar has a predictive parser\n";
+    string s = hasPredictiveParser(grammar)? "Yes" : "No";
+    std::cout << s << std::endl;
 }
     
 int main (int argc, char* argv[])

@@ -67,7 +67,8 @@ void removeRlsWNonGenSyms(grammar_t * g, std::vector<bool> gensym);
 std::vector<bool> calculateReachableSymbols(grammar_t * g);
 void removeRlsWNonReachableSyms(grammar_t * g, std::vector<bool> rsyms);
 
-//Print
+//Print functions
 void print_rules(rulelist_t * rules, grammar_t * g);
 
-//
+//Functions for predictive parser checking
+bool hasPredictiveParser(grammar_t * g);
